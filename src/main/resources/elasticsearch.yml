@@ -1,0 +1,7 @@
+http.enabled: true
+cluster.name: elasticSearchXabe
+path.data: C://elasticSearchXabe
+index.number_of_shards: 1
+index.number_of_replicas: 0
+index.refresh_interval: 2
+client.transport.sniff: false

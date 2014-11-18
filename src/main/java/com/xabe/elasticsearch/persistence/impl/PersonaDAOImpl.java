@@ -1,5 +1,6 @@
 package com.xabe.elasticsearch.persistence.impl;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,14 +18,15 @@ import com.xabe.elasticsearch.client.ClientProvider;
 import com.xabe.elasticsearch.modelo.Persona;
 import com.xabe.elasticsearch.persistence.PersonaDAO;
 import com.xabe.elasticsearch.util.Constant;
+import com.xabe.elasticsearch.util.JsonUtils;
 
 public class PersonaDAOImpl implements PersonaDAO{
 
 	private ClientProvider provider =   ClientProvider.getInstance();
 	
 	@Override
-	public IndexResponse create(Persona persona) {
-		return provider.getClient().prepareIndex(Constant.INDEX_PERSONA, Constant.TYPE_PERSONA).setSource(provider.getJson(persona)).execute().actionGet();
+	public IndexResponse create(Persona persona) throws IOException {
+		return provider.getClient().prepareIndex(Constant.INDEX_PERSONA, Constant.TYPE_PERSONA).setSource(JsonUtils.getJson(persona)).execute().actionGet();
 	}
 	
 	@Override
@@ -35,7 +37,7 @@ public class PersonaDAOImpl implements PersonaDAO{
 	@Override
 	public void update(String id, Persona persona) throws Exception {
 		BulkRequestBuilder bulkRequest = provider.getClient().prepareBulk();
-		bulkRequest.add(provider.getClient().prepareIndex(Constant.INDEX_PERSONA, Constant.TYPE_PERSONA, id).setSource(provider.getJson(persona)));
+		bulkRequest.add(provider.getClient().prepareIndex(Constant.INDEX_PERSONA, Constant.TYPE_PERSONA, id).setSource(JsonUtils.getJson(persona)));
 		BulkResponse bulkResponse = bulkRequest.execute().actionGet();
 		if (bulkResponse.hasFailures()) 
 		{
@@ -44,13 +46,13 @@ public class PersonaDAOImpl implements PersonaDAO{
 	}
 	
 	@Override
-	public Persona search(String id) {
+	public Persona search(String id) throws IOException  {
 		GetResponse response = provider.getClient().prepareGet(Constant.INDEX_PERSONA, Constant.TYPE_PERSONA, id).execute().actionGet();
-		return provider.getObject(response.getSourceAsString(), Persona.class);
+		return JsonUtils.getPojo(response.getSourceAsString(), Persona.class);
 	}
 	
 	
-	public List<Persona> searchField(String filter,String value){
+	public List<Persona> searchField(String filter,String value) throws IOException {
 		SearchResponse response = provider.getClient().prepareSearch(Constant.INDEX_PERSONA)
 		        										.setTypes(Constant.TYPE_PERSONA)
 		        										.setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
@@ -59,7 +61,7 @@ public class PersonaDAOImpl implements PersonaDAO{
 		        										.actionGet();
 		List<Persona> result = new ArrayList<Persona>();
 		for(SearchHit hit : response.getHits()) {
-			result.add(provider.getObject(hit.getSourceAsString(), Persona.class));
+			result.add(JsonUtils.getPojo(hit.getSourceAsString(), Persona.class));
 		}
 		
 		return result;
